@@ -50,7 +50,7 @@ cd ..
   pod install
   ```
 
-  
+
 
 ### 2、创建 Xinstall 应用
 
@@ -193,7 +193,7 @@ componentDidMount() {
   xinstall.addWakeUpEventListener(result => {
     // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及唤醒参数后的业务逻辑代码
     var channelCode = result.channelCode;
-  	var data = result.data;
+    var data = result.data;
   })
 }
 ```
@@ -252,7 +252,7 @@ xinstall.addInstallEventListener(result => {
     // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及携带参数后的业务逻辑代码
     var channelCode = result.channelCode;
     var data = result.data;
-  	var isFirstFetch = result.isFirstFetch;
+    var isFirstFetch = result.isFirstFetch;
 })
 ```
 
@@ -364,5 +364,3 @@ Android系统，iOS系统
 若您想要自定义下载页面，或者查看数据报表等进阶功能，请移步 [Xinstall 官网](https://xinstall.com/) 查看对应文档。
 
 若您在集成过程中如有任何疑问或者困难，可以随时联系 [Xinstall 官方客服](https://xinstall.com/) 在线解决。
-
-
