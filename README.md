@@ -50,7 +50,7 @@ cd ..
   pod install
   ```
 
-  
+
 
 ### 2、创建 Xinstall 应用
 
@@ -185,7 +185,7 @@ result：
     "channelCode":"渠道编号",  // 字符串类型。渠道编号，没有渠道编号时为 ""
     "data":{                                    // 对象类型。唤起时携带的参数。
         "co":{                              // co 为唤醒页面中通过 Xinstall Web SDK 中的点击按钮传递的数据，key & value 均可自定义，key & value 数量不限制
-            "自定义key1":"自定义value1", 
+            "自定义key1":"自定义value1",
             "自定义key2":"自定义value2"
         },
         "uo":{                              // uo 为唤醒页面 URL 中 ? 后面携带的标准 GET 参数，key & value 均可自定义，key & value 数量不限制
@@ -205,7 +205,7 @@ componentDidMount() {
   // 该方法用于监听 App 通过 Univeral link 或 scheme 拉起后获取唤醒参数
   xinstall.addWakeUpEventListener(result => {
     // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及唤醒参数后的业务逻辑代码
-    
+
     // 空对象时代表唤醒了，但是没有任何参数传递进来
     if (JSON.stringify(result) == '{}') {
       // 业务逻辑
@@ -268,7 +268,7 @@ result：
     "channelCode":"渠道编号",  // 字符串类型。渠道编号，没有渠道编号时为 ""
     "data":{                                    // 对象类型。安装时携带的参数。
         "co":{                              // co 为唤醒页面中通过 Xinstall Web SDK 中的点击按钮传递的数据，key & value 均可自定义，key & value 数量不限制
-            "自定义key1":"自定义value1", 
+            "自定义key1":"自定义value1",
             "自定义key2":"自定义value2"
         },
         "uo":{                              // uo 为唤醒页面 URL 中 ? 后面携带的标准 GET 参数，key & value 均可自定义，key & value 数量不限制
@@ -286,7 +286,7 @@ result：
 ```javascript
 xinstall.addInstallEventListener(result => {
   // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及携带参数后的业务逻辑代码
-    
+
   // 空对象时代表没有获取到安装参数
   if (JSON.stringify(result) == '{}') {
     // 业务逻辑
@@ -374,7 +374,7 @@ Android系统，iOS系统
 **调用示例**
 
 ``` js
-xinstall.reportPoint('createOrder', 13);
+xinstall.reportEventPoint('createOrder', 13);
 ```
 
 **补充说明**
@@ -410,5 +410,3 @@ Android系统，iOS系统
 若您想要自定义下载页面，或者查看数据报表等进阶功能，请移步 [Xinstall 官网](https://xinstall.com/) 查看对应文档。
 
 若您在集成过程中如有任何疑问或者困难，可以随时联系 [Xinstall 官方客服](https://xinstall.com/) 在线解决。
-
-
