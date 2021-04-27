@@ -50,7 +50,7 @@ cd ..
   pod install
   ```
 
-
+  
 
 ### 2、创建 Xinstall 应用
 
@@ -105,7 +105,7 @@ npm run initxinstall <appKey> <scheme>
 
 **配置 Universal links 关联域名**
 
-在 Xcode 中配置 Xinstall 为当前应用生成的关联域名（Associated Domains）：**applinks:xxxx.xinstall.top**
+在 Xcode 中配置 Xinstall 为当前应用生成的关联域名（Associated Domains）：**applinks:xxxx.xinstall.net**
 
 关联域名可在：Xinstall 应用控制台-> iOS 集成-> 功能集成 中获取
 
@@ -177,9 +177,22 @@ result：
 内部字段：
 
 ```
+// 如果唤醒时没有携带任何参数，result 为一个空 json 对象：
+{}
+
+// 如果唤醒时有任意参数，result 为 json 对象，内部字段为：
 {
-    'channelCode': '渠道编号', //渠道编号
-    'data': '唤醒携带的参数'   //有携带参数，则返回数据，没有则为空
+    "channelCode":"渠道编号",  // 字符串类型。渠道编号，没有渠道编号时为 ""
+    "data":{                                    // 对象类型。唤起时携带的参数。
+        "co":{                              // co 为唤醒页面中通过 Xinstall Web SDK 中的点击按钮传递的数据，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1", 
+            "自定义key2":"自定义value2"
+        },
+        "uo":{                              // uo 为唤醒页面 URL 中 ? 后面携带的标准 GET 参数，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1",
+            "自定义key2":"自定义value2"
+        }
+    }
 }
 ```
 
@@ -192,8 +205,17 @@ componentDidMount() {
   // 该方法用于监听 App 通过 Univeral link 或 scheme 拉起后获取唤醒参数
   xinstall.addWakeUpEventListener(result => {
     // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及唤醒参数后的业务逻辑代码
-    var channelCode = result.channelCode;
-    var data = result.data;
+    
+    // 空对象时代表唤醒了，但是没有任何参数传递进来
+    if (JSON.stringify(result) == '{}') {
+      // 业务逻辑
+    } else {
+      var channelCode = result.channelCode;
+      var data = result.data;
+      var co = data.co;
+      var uo = data.uo;
+      // 根据获取到的数据做对应业务逻辑
+    }
   })
 }
 ```
@@ -238,21 +260,45 @@ result：
 内部字段：
 
 ```
+// 如果没有获取到安装时携带的参数，result 为一个空 json 对象：
+{}
+
+// 获取到了安装时携带的参数，result 为 json 对象，内部字段为：
 {
-    'channelCode': '渠道编号', 			//渠道编号
-    'data': '个性化安装携带的参数',   //有携带参数，则返回数据，没有则为空
-    'isFirstFetch': true  // true 或者 false。代表是否为第一次获取到安装参数，只有第一次获取到时为 true
+    "channelCode":"渠道编号",  // 字符串类型。渠道编号，没有渠道编号时为 ""
+    "data":{                                    // 对象类型。安装时携带的参数。
+        "co":{                              // co 为唤醒页面中通过 Xinstall Web SDK 中的点击按钮传递的数据，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1", 
+            "自定义key2":"自定义value2"
+        },
+        "uo":{                              // uo 为唤醒页面 URL 中 ? 后面携带的标准 GET 参数，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1",
+            "自定义key2":"自定义value2"
+        }
+    },
+    "timeSpan": 12, // 数字类型。代表下载页面上点击开始下载按钮与第一次打开App时的时间间隔，单位为秒
+    "isFirstFetch": true // boolean类型。代表是否为第一次获取到安装参数，只有第一次获取到时为 true
 }
 ```
 
 **调用示例**
 
-```js
+```javascript
 xinstall.addInstallEventListener(result => {
-    // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及携带参数后的业务逻辑代码
+  // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及携带参数后的业务逻辑代码
+    
+  // 空对象时代表没有获取到安装参数
+  if (JSON.stringify(result) == '{}') {
+    // 业务逻辑
+  } else {
     var channelCode = result.channelCode;
     var data = result.data;
+    var co = data.co;
+    var uo = data.uo;
+    var timeSpan = result.timeSpan;
     var isFirstFetch = result.isFirstFetch;
+    // 根据获取到的数据做对应业务逻辑
+  }
 })
 ```
 
@@ -328,7 +374,7 @@ Android系统，iOS系统
 **调用示例**
 
 ``` js
-xinstall.reportEventPoint('createOrder', 13);
+xinstall.reportPoint('createOrder', 13);
 ```
 
 **补充说明**
@@ -364,3 +410,5 @@ Android系统，iOS系统
 若您想要自定义下载页面，或者查看数据报表等进阶功能，请移步 [Xinstall 官网](https://xinstall.com/) 查看对应文档。
 
 若您在集成过程中如有任何疑问或者困难，可以随时联系 [Xinstall 官方客服](https://xinstall.com/) 在线解决。
+
+
