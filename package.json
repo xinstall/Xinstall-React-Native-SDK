@@ -1,0 +1,25 @@
+
+{
+  "name": "xinstall-react-native",
+  "version": "1.1.5",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "xinstall"
+  ],
+  "author": "Xinstall",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xinstall/Xinstall-React-Native-SDK.git"
+  },
+  "peerDependencies": {
+    "react-native": "^0.41.2"
+  },
+  "scripts": {
+    "postinstall": "node installScript.js"
+  }
+}

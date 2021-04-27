@@ -1,0 +1,15 @@
+创建项目
+npx react-native init hello
+
+加载install
+npm install xinstall-react-native --save
+
+配置install
+npm run initxinstall qs352nr xiqs352nr
+
+运行android  --variant=release可选
+npx react-native run-android --variant=release
+
+打包
+gradlew clean
+gradlew assembleRelease
