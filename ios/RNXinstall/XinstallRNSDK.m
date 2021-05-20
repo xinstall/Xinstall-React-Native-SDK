@@ -3,10 +3,11 @@
 //  XinstallRNSDK
 //
 //  Created by Xinstall on 2020/12/16.
-//  Copyright © 2020 shu bao. All rights reserved.
+//  Copyright © 2021 shu bao. All rights reserved.
 //
 
 #import "XinstallRNSDK.h"
+#import "XinstallRNConfig.h"
 
 #if __has_include(<React/RCTBridge.h>)
   #import <React/RCTEventDispatcher.h>
@@ -50,6 +51,9 @@ RCT_EXPORT_MODULE(Xinstall);
 
 - (instancetype)init {
   if (self = [super init]) {
+      if (XinstallThirdVersionFlag.length > 0) {}
+      if (XinstallThirdPlatformFlag.length > 0) {}
+      
       [XinstallSDK initWithDelegate:self];
   }
   return self;
@@ -61,6 +65,14 @@ RCT_EXPORT_MODULE(Xinstall);
 - (void)xinstall_getWakeUpParams:(XinstallData *)appData {
   self.wakeUpData = appData;
   [self invokeRegisteredWakeUpCallbackWithChannelCode:appData.channelCode data:appData.data];
+}
+
+- (NSString *)xiSdkThirdVersion {
+    return XinstallThirdVersion;
+}
+
+- (NSInteger)xiSdkType {
+    return XinstallThirdPlatform;
 }
 
 #pragma mark - private Methods

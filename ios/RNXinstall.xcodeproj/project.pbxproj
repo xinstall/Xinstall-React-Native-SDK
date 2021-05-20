@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AF30B2182599FA7B00939715 /* XinstallRNSDK.m in Sources */ = {isa = PBXBuildFile; fileRef = AF30B2142599FA7B00939715 /* XinstallRNSDK.m */; };
+		AF4C340D265278C300DE9643 /* XinstallRNConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = AF4C340C265278C300DE9643 /* XinstallRNConfig.m */; };
 		AF6B006725B980E3008008BF /* libXinstallSDK.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AF6B006625B980E3008008BF /* libXinstallSDK.a */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,8 @@
 		134814201AA4EA6300B7C361 /* libRNXinstall.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNXinstall.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF30B2142599FA7B00939715 /* XinstallRNSDK.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = XinstallRNSDK.m; path = RNXinstall/XinstallRNSDK.m; sourceTree = "<group>"; };
 		AF30B2172599FA7B00939715 /* XinstallRNSDK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XinstallRNSDK.h; path = RNXinstall/XinstallRNSDK.h; sourceTree = "<group>"; };
+		AF4C340B265278C300DE9643 /* XinstallRNConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XinstallRNConfig.h; path = RNXinstall/XinstallRNConfig.h; sourceTree = "<group>"; };
+		AF4C340C265278C300DE9643 /* XinstallRNConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = XinstallRNConfig.m; path = RNXinstall/XinstallRNConfig.m; sourceTree = "<group>"; };
 		AF6B006225B980E3008008BF /* XinstallDefault.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XinstallDefault.h; path = RNXinstall/XinstallDefault.h; sourceTree = "<group>"; };
 		AF6B006325B980E3008008BF /* XinstallData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XinstallData.h; path = RNXinstall/XinstallData.h; sourceTree = "<group>"; };
 		AF6B006425B980E3008008BF /* XinstallError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XinstallError.h; path = RNXinstall/XinstallError.h; sourceTree = "<group>"; };
@@ -64,6 +67,8 @@
 				AF6B006525B980E3008008BF /* XinstallSDK.h */,
 				AF30B2172599FA7B00939715 /* XinstallRNSDK.h */,
 				AF30B2142599FA7B00939715 /* XinstallRNSDK.m */,
+				AF4C340B265278C300DE9643 /* XinstallRNConfig.h */,
+				AF4C340C265278C300DE9643 /* XinstallRNConfig.m */,
 				134814211AA4EA7D00B7C361 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -125,6 +130,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF4C340D265278C300DE9643 /* XinstallRNConfig.m in Sources */,
 				AF30B2182599FA7B00939715 /* XinstallRNSDK.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

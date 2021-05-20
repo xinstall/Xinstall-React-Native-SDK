@@ -110,70 +110,62 @@ function configIOSPod() {
 
 function configIOSPlist() {
 	logNormalMsg("开始配置 plist 文件");
-
-	var configSuccess = false;
-	findFileWithProcess("./ios", "Pods", "Info.plist", (plistFullPath) => {
-
-		// 在 plist 中插入 appKey
-		var plistContent = fs.readFileSync(plistFullPath,"utf-8");
-		if (plistContent.indexOf('<string>BNDL</string>') > -1) {
-			return;
-		}
-
-		var startContent = plistContent.match(/<plist .*>\n?<dict>/);
-		// 已经配置过，则直接更改 appkey，如果没有配置过，则新增配置进去
-		if (plistContent.indexOf('<key>com.xinstall.APP_KEY</key>') > -1) {
-			var appKeyContent = plistContent.match(/<key>com.xinstall.APP_KEY<\/key>\n?.*<string>.*<\/string>/);
-			plistContent = plistContent.replace(appKeyContent[0], "\n\t<key>com.xinstall.APP_KEY</key>" + "\n\t<string>" + appKey + "</string>");
-		} else {
-			plistContent = plistContent.replace(startContent[0], startContent[0] + "\n\t<key>com.xinstall.APP_KEY</key>" + "\n\t<string>" + appKey + "</string>");
-		}
-
-		// 在 plist 中插入 scheme
-		startContent = plistContent.match(/<plist .*>\n?<dict>/);
-		// 检查是否有 URL scheme 存在
-		if (plistContent.indexOf('<key>CFBundleURLTypes</key>') > -1) {
-			var appKeyContent = plistContent.match(/<key>CFBundleURLTypes<\/key>\n?.*<array>/);
-			plistContent = plistContent.replace(appKeyContent[0], appKeyContent[0]
-				+ "\n\t\t<dict>"
-				+ "\n\t\t\t<key>CFBundleTypeRole</key>"
-				+ "\n\t\t\t<string>Editor</string>"
-				+ "\n\t\t\t<key>CFBundleURLName</key>"
-				+ "\n\t\t\t<string>xinstall</string>"
-				+ "\n\t\t\t<key>CFBundleURLSchemes</key>"
-				+ "\n\t\t\t<array>"
-				+ "\n\t\t\t\t<string>" + scheme + "</string>"
-				+ "\n\t\t\t</array>"
-				+ "\n\t\t</dict>"
-			);
-		} else {
-			plistContent = plistContent.replace(startContent[0], startContent[0]
-				+ "\n\t<key>CFBundleURLTypes</key>"
-				+ "\n\t<array>"
-				+ "\n\t\t<dict>"
-				+ "\n\t\t\t<key>CFBundleTypeRole</key>"
-				+ "\n\t\t\t<string>Editor</string>"
-				+ "\n\t\t\t<key>CFBundleURLName</key>"
-				+ "\n\t\t\t<string>xinstall</string>"
-				+ "\n\t\t\t<key>CFBundleURLSchemes</key>"
-				+ "\n\t\t\t<array>"
-				+ "\n\t\t\t\t<string>" + scheme + "</string>"
-				+ "\n\t\t\t</array>"
-				+ "\n\t\t</dict>"
-				+ "\n\t</array>"
-			);
-		}
-
-		fs.writeFileSync(plistFullPath, plistContent, "utf-8");
-		configSuccess = true;
-
-	});
-
-	if (configSuccess == false) {
+	// 开始判断 Info.plist 文件是否存在
+	var plistFullPath = findFile("./ios", "Info.plist");
+	if (plistFullPath == "") {
 		logErrorMsg("未找到 Info.plist，请手动进行配置");
+		return false;
 	}
 
-	return configSuccess;
+	// 在 plist 中插入 appKey
+	var plistContent = fs.readFileSync(plistFullPath,"utf-8");
+	var startContent = plistContent.match(/<plist .*>\n?<dict>/);
+	// 已经配置过，则直接更改 appkey，如果没有配置过，则新增配置进去
+	if (plistContent.indexOf('<key>com.xinstall.APP_KEY</key>') > -1) {
+		var appKeyContent = plistContent.match(/<key>com.xinstall.APP_KEY<\/key>\n?.*<string>.*<\/string>/);
+		plistContent = plistContent.replace(appKeyContent[0], "\n\t<key>com.xinstall.APP_KEY</key>" + "\n\t<string>" + appKey + "</string>");
+	} else {
+		plistContent = plistContent.replace(startContent[0], startContent[0] + "\n\t<key>com.xinstall.APP_KEY</key>" + "\n\t<string>" + appKey + "</string>");
+	}
+
+	// 在 plist 中插入 scheme
+	startContent = plistContent.match(/<plist .*>\n?<dict>/);
+	// 检查是否有 URL scheme 存在
+	if (plistContent.indexOf('<key>CFBundleURLTypes</key>') > -1) {
+		var appKeyContent = plistContent.match(/<key>CFBundleURLTypes<\/key>\n?.*<array>/);
+		plistContent = plistContent.replace(appKeyContent[0], appKeyContent[0]
+			+ "\n\t\t<dict>"
+			+ "\n\t\t\t<key>CFBundleTypeRole</key>"
+			+ "\n\t\t\t<string>Editor</string>"
+			+ "\n\t\t\t<key>CFBundleURLName</key>"
+			+ "\n\t\t\t<string>xinstall</string>"
+			+ "\n\t\t\t<key>CFBundleURLSchemes</key>"
+			+ "\n\t\t\t<array>"
+			+ "\n\t\t\t\t<string>" + scheme + "</string>"
+			+ "\n\t\t\t</array>"
+			+ "\n\t\t</dict>"
+		);
+	} else {
+		plistContent = plistContent.replace(startContent[0], startContent[0]
+			+ "\n\t<key>CFBundleURLTypes</key>"
+			+ "\n\t<array>"
+			+ "\n\t\t<dict>"
+			+ "\n\t\t\t<key>CFBundleTypeRole</key>"
+			+ "\n\t\t\t<string>Editor</string>"
+			+ "\n\t\t\t<key>CFBundleURLName</key>"
+			+ "\n\t\t\t<string>xinstall</string>"
+			+ "\n\t\t\t<key>CFBundleURLSchemes</key>"
+			+ "\n\t\t\t<array>"
+			+ "\n\t\t\t\t<string>" + scheme + "</string>"
+			+ "\n\t\t\t</array>"
+			+ "\n\t\t</dict>"
+			+ "\n\t</array>"
+		);
+	}
+
+
+	fs.writeFileSync(plistFullPath, plistContent, "utf-8");
+	return true;
 }
 
 function configIOSAppDelegate() {
@@ -386,40 +378,6 @@ function findFile (rootDirPath, desFileName) {
 	}
 
   return desFileFullPath;
-}
-
-function findFileWithProcess(rootDirPath, excludeDirName, desFileName, handler) {
-	if (!fs.existsSync(rootDirPath)) {
-    return;
-  }
-
-  var stats = fs.statSync(rootDirPath);
-  if (!stats.isDirectory()) {
-		return;
-  }
-
-	if (handler == undefined || typeof(handler) != "function") {
-		return;
-	}
-
-
-	var filesArray = fs.readdirSync(rootDirPath);
-	for (var i = 0; i < filesArray.length; i++) {
-		var fileName = filesArray[i];
-
-    var fullFilePath = path.join(rootDirPath, fileName);
-    var stats = fs.statSync(fullFilePath);
-    if (stats.isDirectory()) {
-			if (fullFilePath.indexOf(excludeDirName) == -1) {
-				findFileWithProcess(fullFilePath, excludeDirName, desFileName, handler);
-			}
-
-    } else {
-      if (desFileName == fileName) {
-				handler(fullFilePath);
-      }
-    }
-	}
 }
 
 /**
