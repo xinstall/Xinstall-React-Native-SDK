@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.alibaba.fastjson.JSON;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -19,6 +20,7 @@ import com.xinstall.listener.XInstallAdapter;
 import com.xinstall.listener.XWakeUpAdapter;
 import com.xinstall.model.XAppData;
 
+import java.util.Iterator;
 import java.util.Map;
 
 public class Xinstall extends ReactContextBaseJavaModule {
@@ -57,31 +59,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
             @Override
             public void onWakeUp(XAppData xAppData) {
                 if (xAppData != null) {
-                    Log.d("XinstallModule", "getWakeUpParam : data = " + xAppData.toJsonObject().toString());
-                    String channelCode = xAppData.getChannelCode();
-                    Map<String, String> extraData = xAppData.getExtraData();
-                    String timeSpan = xAppData.getTimeSpan();
-
-                    WritableMap params = Arguments.createMap();
-                    params.putString("channelCode", channelCode);
-                    params.putString("timeSpan", timeSpan);
-                    WritableMap data = Arguments.createMap();
-                    //通过链接后面携带的参数或者通过webSdk初始化传入的data值。
-                    String uo = extraData.get("uo");
-                    // if (uo.trim().equals("")) {
-                    //     data.putString("uo", "{}");
-                    // } else {
-                        data.putString("uo", uo);
-                    // }
-                    //webSdk初始，在buttonId里面定义的按钮点击携带数据
-                    String co = extraData.get("co");
-                    // if (co.trim().equals("")) {
-                    //     data.putString("co", "{}");
-                    // } else {
-                        data.putString("co", co);
-                    // }
-
-                    params.putMap("data",data);
+                    WritableMap params = xData2Map(xAppData, false);
                     if (callback == null) {
                         getReactApplicationContext()
                                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -93,6 +71,64 @@ public class Xinstall extends ReactContextBaseJavaModule {
             }
 
         });
+    }
+
+    private WritableMap xData2Map(XAppData xAppData, boolean isInit) {
+        Log.d("XinstallModule", "getInstallParam : data = " + xAppData.toJsonObject().toString());
+
+        String channelCode = xAppData.getChannelCode();
+        String timeSpan = xAppData.getTimeSpan();
+        boolean firstFetch = xAppData.isFirstFetch();
+
+        WritableMap params = Arguments.createMap();
+        params.putString("channelCode", channelCode);
+        params.putString("timeSpan", timeSpan);
+        if (isInit) {
+            params.putBoolean("isFirstFetch", firstFetch);
+        }
+
+        Map<String, String> extraData = xAppData.getExtraData();
+        WritableMap data = Arguments.createMap();
+        //通过链接后面携带的参数或者通过webSdk初始化传入的data值。
+        String uo = extraData.get("uo");
+        if (uo.trim().equals("")) {
+            data.putMap("uo", Arguments.createMap());
+        } else {
+            try {
+                WritableMap uoMap = Arguments.createMap();
+                com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(uo);
+                Iterator<Map.Entry<String, Object>> iterator = jsonObject.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, Object> next = iterator.next();
+                    uoMap.putString(next.getKey(), (String) next.getValue());
+                }
+                data.putMap("uo", uoMap);
+            } catch (Exception e) {
+                data.putMap("uo", Arguments.createMap());
+            }
+
+        }
+        //webSdk初始，在buttonId里面定义的按钮点击携带数据
+        String co = extraData.get("co");
+        if (co.trim().equals("")) {
+            data.putMap("co",  Arguments.createMap());
+        } else {
+            try {
+                WritableMap coMap = Arguments.createMap();
+                com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(co);
+                Iterator<Map.Entry<String, Object>> iterator = jsonObject.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, Object> next = iterator.next();
+                    coMap.putString(next.getKey(), (String) next.getValue());
+                }
+                data.putMap("co", coMap);
+            } catch (Exception e) {
+                data.putMap("co", Arguments.createMap());
+            }
+        }
+
+        params.putMap("data", data);
+        return params;
     }
 
     @Override
@@ -113,33 +149,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
             @Override
             public void onInstall(XAppData xAppData) {
                 try {
-                    Log.d("XinstallModule", "getInstallParam : data = " + xAppData.toJsonObject().toString());
-                    String channelCode = xAppData.getChannelCode();
-                    Map<String, String> extraData = xAppData.getExtraData();
-                    String timeSpan = xAppData.getTimeSpan();
-                    boolean firstFetch = xAppData.isFirstFetch();
-
-                    WritableMap params = Arguments.createMap();
-                    params.putString("channelCode", channelCode);
-                    params.putString("timeSpan", timeSpan);
-                    params.putBoolean("isFirstFetch", firstFetch);
-                    WritableMap data = Arguments.createMap();
-                    //通过链接后面携带的参数或者通过webSdk初始化传入的data值。
-                    String uo = extraData.get("uo");
-                    if (uo.trim().equals("")) {
-                        data.putString("uo", "{}");
-                    } else {
-                        data.putString("uo", uo);
-                    }
-                    //webSdk初始，在buttonId里面定义的按钮点击携带数据
-                    String co = extraData.get("co");
-                    if (co.trim().equals("")) {
-                        data.putString("co", "{}");
-                    } else {
-                        data.putString("co", co);
-                    }
-
-                    params.putMap("data",data);
+                    WritableMap params = xData2Map(xAppData, true);
                     callback.invoke(params);
                 } catch (Exception e) {
                     callback.invoke(e);
