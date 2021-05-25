@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSON;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -39,6 +40,37 @@ public class Xinstall extends ReactContextBaseJavaModule {
             @Override
             public void onNewIntent(Intent intent) {
                 getWakeUp(intent, null);
+            }
+        });
+
+        reactContext.addLifecycleEventListener(new LifecycleEventListener() {
+            @Override
+            public void onHostResume() {
+                getYybWakeUp();
+
+            }
+
+            @Override
+            public void onHostPause() {
+            }
+
+            @Override
+            public void onHostDestroy() {
+            }
+        });
+    }
+
+    private void getYybWakeUp() {
+        Activity currentActivity = context.getCurrentActivity();
+        XInstall.getYybWakeUpParam(currentActivity, currentActivity.getIntent(), new XWakeUpAdapter() {
+            @Override
+            public void onWakeUp(XAppData xAppData) {
+                if (xAppData != null) {
+                    WritableMap params = xData2Map(xAppData, false);
+                    getReactApplicationContext()
+                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                            .emit("xinstallWakeUpEventName", params);
+                }
             }
         });
     }
@@ -111,7 +143,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
         //webSdk初始，在buttonId里面定义的按钮点击携带数据
         String co = extraData.get("co");
         if (co.trim().equals("")) {
-            data.putMap("co",  Arguments.createMap());
+            data.putMap("co", Arguments.createMap());
         } else {
             try {
                 WritableMap coMap = Arguments.createMap();
