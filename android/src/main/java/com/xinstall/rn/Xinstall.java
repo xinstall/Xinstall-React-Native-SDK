@@ -39,42 +39,12 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
             @Override
             public void onNewIntent(Intent intent) {
-                getWakeUp(intent, null);
+                Activity activity = getCurrentActivity();
+                getWakeUp(activity,intent, null);
             }
         });
 
-        reactContext.addLifecycleEventListener(new LifecycleEventListener() {
-            @Override
-            public void onHostResume() {
-                getYybWakeUp();
-
-            }
-
-            @Override
-            public void onHostPause() {
-            }
-
-            @Override
-            public void onHostDestroy() {
-            }
-        });
     }
-
-    private void getYybWakeUp() {
-        Activity currentActivity = context.getCurrentActivity();
-        XInstall.getYybWakeUpParam(currentActivity, currentActivity.getIntent(), new XWakeUpAdapter() {
-            @Override
-            public void onWakeUp(XAppData xAppData) {
-                if (xAppData != null) {
-                    WritableMap params = xData2Map(xAppData, false);
-                    getReactApplicationContext()
-                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                            .emit("xinstallWakeUpEventName", params);
-                }
-            }
-        });
-    }
-
 
     @ReactMethod
     public void addWakeUpEventListener(final Callback successBack) {
@@ -82,12 +52,12 @@ public class Xinstall extends ReactContextBaseJavaModule {
         Activity currentActivity = getCurrentActivity();
         if (currentActivity != null) {
             Intent intent = currentActivity.getIntent();
-            getWakeUp(intent, successBack);
+            getWakeUp(currentActivity,intent, successBack);
         }
     }
 
-    private void getWakeUp(Intent intent, final Callback callback) {
-        XInstall.getWakeUpParam(intent, new XWakeUpAdapter() {
+    private void getWakeUp(Activity activity, Intent intent, final Callback callback) {
+        XInstall.getWakeUpParam(activity,intent, new XWakeUpAdapter() {
             @Override
             public void onWakeUp(XAppData xAppData) {
                 if (xAppData != null) {
