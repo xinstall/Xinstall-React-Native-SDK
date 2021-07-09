@@ -105,11 +105,11 @@ npm run initxinstall <appKey> <scheme>
 
 **配置 Universal links 关联域名**
 
-在 Xcode 中配置 Xinstall 为当前应用生成的关联域名（Associated Domains）：**applinks:xxxx.xinstall.top**
+在 Xcode 中配置 Xinstall 为当前应用生成的关联域名（Associated Domains）：**applinks:xxxx.xinstall.top** 和 **applinks:xxxx.xinstall.net**
 
-关联域名可在：Xinstall 应用控制台-> iOS 集成-> 功能集成 中获取
+> 具体的关联域名可在 Xinstall管理后台 - 对应的应用控制台 - iOS下载配置 页面中找到
 
-![配置 Universal links 关联域名](https://doc.xinstall.com/integrationGuide/iOS3.png)
+![配置 Universal links 关联域名](https://doc.xinstall.com/ReactNative/res/3.png)
 
 
 
