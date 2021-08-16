@@ -2,6 +2,8 @@ package com.xinstall.rn;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -14,8 +16,10 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.xinstall.XINConfiguration;
 import com.xinstall.XInstall;
 import com.xinstall.listener.XInstallAdapter;
 import com.xinstall.listener.XWakeUpAdapter;
@@ -25,7 +29,27 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Xinstall extends ReactContextBaseJavaModule {
-    ReactContext context;
+    private static final String TAG = "XinstallRNSDK";
+
+    private boolean mInitialized = false;
+    private boolean hasCallInit = false;
+
+    private ReactContext context;
+
+    private Callback wakeupCallback = null;
+    private Intent wakeupIntent = null;
+    private Activity wakeupActivity = null;
+
+    private static final Handler UIHandler = new Handler(Looper.getMainLooper());
+
+    private  static void runInUIThread(Runnable runnable) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // 当前线程为UI主线程
+            runnable.run();
+        } else {
+            UIHandler.post(runnable);
+        }
+    }
 
     public Xinstall(final ReactApplicationContext reactContext) {
         super(reactContext);
@@ -47,12 +71,135 @@ public class Xinstall extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void setLog(final boolean isOpen) {
+        runInUIThread(new Runnable() {
+            @Override
+            public void run() {
+                XInstall.setDebug(isOpen);
+            }
+        });
+    }
+
+    @ReactMethod
+    public void initNoAd() {
+        Log.d(TAG,"initNoAd method");
+        runInUIThread(new Runnable() {
+            @Override
+            public void run() {
+                initNoAdInMain();
+            }
+        });
+    }
+
+    private void initNoAdInMain() {
+        hasCallInit = true;
+        XInstall.init(context);
+        xinitialized();
+    }
+
+    @ReactMethod
+    public void initWithAd(ReadableMap params, final Callback premissionBackBlock) {
+
+        XINConfiguration configuration = XINConfiguration.Builder();
+        boolean adEnable = true;
+        if (params.hasKey("adEnable")) {
+            adEnable = params.getBoolean("adEnable");
+            configuration.adEnable(adEnable);
+        }
+
+        if (params.hasKey("oaid") && (params.getString("oaid")).length() > 0) {
+            String oaid = params.getString("oaid");
+            configuration.oaid(oaid);
+        }
+
+        if (params.hasKey("gaid") && params.getString("gaid").length() > 0) {
+            String gaid = params.getString("gaid");
+            configuration.gaid(gaid);
+        }
+
+        boolean isPremission = false;
+        if (params.hasKey("isPremission")) {
+            isPremission = params.getBoolean("isPremission");
+        }
+
+        if (isPremission) {
+            XInstall.initWithPermission(context.getCurrentActivity(), configuration, new Runnable() {
+                @Override
+                public void run() {
+                    xinitialized();
+                    if (premissionBackBlock != null) {
+                        premissionBackBlock.invoke("");
+                    }
+                }
+            });
+        } else {
+            XInstall.init(context.getCurrentActivity(),configuration);
+            xinitialized();
+            if (premissionBackBlock != null) {
+                premissionBackBlock.invoke("");
+            }
+        }
+
+    }
+
+    private void xinitialized() {
+        mInitialized = true;
+        if (wakeupIntent != null && wakeupActivity != null&&wakeupCallback != null) {
+            XInstall.getWakeUpParam(wakeupActivity,wakeupIntent, new XWakeUpAdapter() {
+                @Override
+                public void onWakeUp(XAppData xAppData) {
+                    if (xAppData != null) {
+                        WritableMap params = xData2Map(xAppData, false);
+                        if (wakeupCallback == null) {
+                            getReactApplicationContext()
+                                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                    .emit("xinstallWakeUpEventName", params);
+                        } else {
+                            wakeupCallback.invoke(params);
+                        }
+                    }
+                    wakeupCallback = null;
+                    wakeupActivity = null;
+                    wakeupIntent = null;
+                }
+            });
+
+        } else {
+            wakeupActivity = null;
+            wakeupIntent = null;
+            wakeupCallback = null;
+        }
+    }
+
+    @ReactMethod
     public void addWakeUpEventListener(final Callback successBack) {
-        Log.d("XinstallModule", "getWakeUp");
-        Activity currentActivity = getCurrentActivity();
-        if (currentActivity != null) {
-            Intent intent = currentActivity.getIntent();
-            getWakeUp(currentActivity,intent, successBack);
+        Log.d(TAG, "getWakeUp");
+        runInUIThread(new Runnable() {
+            @Override
+            public void run() {
+                addWakeUpEventListenerInMain(successBack);
+            }
+        });
+
+    }
+
+    private void addWakeUpEventListenerInMain(final Callback successBack) {
+        if (!hasCallInit) {
+            Log.d(TAG, "未执行SDK 初始化方法, SDK 需要手动初始化(初始方法为 init 和 initWithAd !");
+            return;
+        }
+        if (mInitialized) {
+            Activity currentActivity = getCurrentActivity();
+            if (currentActivity != null) {
+                Intent intent = currentActivity.getIntent();
+                getWakeUp(currentActivity,intent, successBack);
+            }
+        } else {
+            wakeupCallback = successBack;
+            wakeupActivity = getCurrentActivity();
+            if (wakeupActivity != null) {
+                wakeupIntent = wakeupActivity.getIntent();
+            }
         }
     }
 
@@ -71,8 +218,51 @@ public class Xinstall extends ReactContextBaseJavaModule {
                     }
                 }
             }
-
         });
+    }
+
+    @ReactMethod
+    public void addInstallEventListener(final Callback callback) {
+        Log.d(TAG, "getInstall");
+        runInUIThread(new Runnable() {
+            @Override
+            public void run() {
+                addInstallEventListenerInMain(callback);
+            }
+        });
+    }
+
+    private void addInstallEventListenerInMain(final  Callback callback) {
+        XInstall.getInstallParam(new XInstallAdapter() {
+            @Override
+            public void onInstall(XAppData xAppData) {
+                try {
+                    WritableMap params = xData2Map(xAppData, true);
+                    callback.invoke(params);
+                } catch (Exception e) {
+                    callback.invoke(e);
+                }
+            }
+        });
+    }
+
+    @ReactMethod
+    public void reportRegister() {
+        Log.d("XinstallModule", "reportRegister");
+        XInstall.reportRegister();
+    }
+
+    @ReactMethod
+    public void reportEventPoint(String pointId, Integer pointValue) {
+        Log.d("XinstallModule", "reportEventPoint");
+        if (!TextUtils.isEmpty(pointId)) {
+            XInstall.reportPoint(pointId, pointValue);
+        }
+    }
+
+    @Override
+    public String getName() {
+        return "Xinstall";
     }
 
     private WritableMap xData2Map(XAppData xAppData, boolean isInit) {
@@ -131,46 +321,5 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
         params.putMap("data", data);
         return params;
-    }
-
-    @Override
-    public void initialize() {
-        super.initialize();
-        XInstall.init(context);
-    }
-
-    @Override
-    public String getName() {
-        return "Xinstall";
-    }
-
-    @ReactMethod
-    public void addInstallEventListener(final Callback callback) {
-        Log.d("XinstallModule", "getInstall");
-        XInstall.getInstallParam(new XInstallAdapter() {
-            @Override
-            public void onInstall(XAppData xAppData) {
-                try {
-                    WritableMap params = xData2Map(xAppData, true);
-                    callback.invoke(params);
-                } catch (Exception e) {
-                    callback.invoke(e);
-                }
-            }
-        });
-    }
-
-    @ReactMethod
-    public void reportRegister() {
-        Log.d("XinstallModule", "reportRegister");
-        XInstall.reportRegister();
-    }
-
-    @ReactMethod
-    public void reportEventPoint(String pointId, Integer pointValue) {
-        Log.d("XinstallModule", "reportEventPoint");
-        if (!TextUtils.isEmpty(pointId)) {
-            XInstall.reportPoint(pointId, pointValue);
-        }
     }
 }

@@ -53,8 +53,6 @@ RCT_EXPORT_MODULE(Xinstall);
   if (self = [super init]) {
       if (XinstallThirdVersionFlag.length > 0) {}
       if (XinstallThirdPlatformFlag.length > 0) {}
-      
-      [XinstallSDK initWithDelegate:self];
   }
   return self;
 }
@@ -160,6 +158,21 @@ RCT_EXPORT_MODULE(Xinstall);
 - (NSArray<NSString *> *)supportedEvents
 {
   return @[kXinstallWakeUpEventName];
+}
+
+RCT_EXPORT_METHOD(setLog:(BOOL)isOpen)
+{
+    [XinstallSDK setShowLog:isOpen];
+}
+
+RCT_EXPORT_METHOD(initWithoutAd)
+{
+    [XinstallSDK initWithDelegate:self];
+}
+
+RCT_EXPORT_METHOD(initWithAd:(NSString *)idfa)
+{
+    [XinstallSDK initWithDelegate:self idfa:idfa];
 }
 
 RCT_EXPORT_METHOD(addInstallEventListener:(RCTResponseSenderBlock)callback)
