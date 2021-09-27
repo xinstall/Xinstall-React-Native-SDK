@@ -30,13 +30,25 @@
 #endif
 
 static NSString * const kXinstallWakeUpEventName = @"xinstallWakeUpEventName";
+static NSString * const kXinstallWakeUpDetailEventName = @"xinstallWakeUpDetailEventName";
+
+/// 注册 唤醒监听 类型
+typedef NS_ENUM(NSInteger, XinstallRNSDKWakeUpListenerType) {
+    XinstallRNSDKWakeUpListenerTypeUnknow = 0,           // 未知类型，一般为没有注册过唤醒监听
+    XinstallRNSDKWakeUpListenerTypeWithoutDetail,        // 不包含错误的类型，只有获取唤醒参数成功时回调
+    XinstallRNSDKWakeUpListenerTypeWithDetail            // 包含错误的类型，获取唤醒参数成功或者失败时都会回调
+};
 
 @interface XinstallRNSDK ()<XinstallDelegate>
 
 /// 注册唤醒参数的 js 回调
 @property (nonatomic, copy) RCTResponseSenderBlock registeredWakeUpCallback;
+/// 注册 唤醒监听 类型
+@property (nonatomic, assign) XinstallRNSDKWakeUpListenerType wakeUpListenerType;
 /// 保存唤醒参数，因为唤醒的时机可能早于js注册唤醒
 @property (nonatomic, strong) XinstallData *wakeUpData;
+/// 保存唤醒错误信息，因为唤醒的时机可能早于js注册唤醒
+@property (nonatomic, strong) XinstallError *wakeUpError;
 /// 通过 scheme 唤醒的情况下，执行 -application:openURL:options: 方法时，该对象还没有创建，必须在创建后再进行处理，所以通过这个参数来辨别
 @property (nonatomic, assign, getter=isLaunchSchemeUsed) BOOL launchSchemeUsed;
 
@@ -60,9 +72,10 @@ RCT_EXPORT_MODULE(Xinstall);
 
 #pragma mark - XinstallDelegate Methods
 
-- (void)xinstall_getWakeUpParams:(XinstallData *)appData {
+- (void)xinstall_getWakeUpParams:(XinstallData *)appData error:(nullable XinstallError *)error {
   self.wakeUpData = appData;
-  [self invokeRegisteredWakeUpCallbackWithChannelCode:appData.channelCode data:appData.data];
+  self.wakeUpError = error;
+  [self invokeRegisteredWakeUpCallbackWithChannelCode:appData.channelCode data:appData.data error:error];
 }
 
 - (NSString *)xiSdkThirdVersion {
@@ -75,13 +88,11 @@ RCT_EXPORT_MODULE(Xinstall);
 
 #pragma mark - private Methods
 
-- (void)invokeRegisteredWakeUpCallbackWithChannelCode:(NSString *)channelCode data:(NSDictionary *)data {
+- (void)invokeRegisteredWakeUpCallbackWithChannelCode:(NSString *)channelCode data:(NSDictionary *)data error:(XinstallError *)error {
   if (self.registeredWakeUpCallback == nil) { return; }
 
     // 数据处理下
     NSDictionary *completedData = [self handleInstallInnerData:data];
-
-    
     
     NSDictionary *callbackRet = @{
       @"channelCode" : channelCode?:@"",
@@ -120,7 +131,40 @@ RCT_EXPORT_MODULE(Xinstall);
         callbackRet = @{};
     }
     
-    [self sendEventWithName:kXinstallWakeUpEventName body:callbackRet];
+    switch (self.wakeUpListenerType) {
+        case XinstallRNSDKWakeUpListenerTypeWithDetail:
+        {
+            if (self.wakeUpData) {          // 有唤醒数据，会回调
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self sendEventWithName:kXinstallWakeUpDetailEventName body:@{ @"wakeUpData" : callbackRet, @"error" : @{}}];
+                });
+            } else if (self.wakeUpError) {  // 有唤醒错误信息，也会回调
+                NSDictionary *dicError = @{
+                    @"errorType" : @(self.wakeUpError.type),
+                    @"errorMsg" : self.wakeUpError.errorMsg
+                };
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self sendEventWithName:kXinstallWakeUpDetailEventName body:@{ @"wakeUpData" : @{}, @"error" : dicError}];
+                });
+            }
+        }
+            break;
+        case XinstallRNSDKWakeUpListenerTypeWithoutDetail:
+        {
+            // 必须拿到了唤醒数据，才会回调
+            if (self.wakeUpData) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self sendEventWithName:kXinstallWakeUpEventName body:callbackRet];
+                });
+            }
+        }
+            break;
+        case XinstallRNSDKWakeUpListenerTypeUnknow:
+        {
+            // 什么都不做
+        }
+            break;
+    }
 }
 
 /**
@@ -200,11 +244,47 @@ RCT_EXPORT_METHOD(addInstallEventListener:(RCTResponseSenderBlock)callback)
 
 RCT_EXPORT_METHOD(addWakeUpEventListener:(RCTResponseSenderBlock)callback)
 {
-  self.registeredWakeUpCallback = callback;
+    // 如果已经注册了带错误的唤醒监听，那么这个注册就不再生效
+    if (self.wakeUpListenerType == XinstallRNSDKWakeUpListenerTypeWithDetail) {
+        return;
+    }
 
-  if (self.wakeUpData) {
-      [self invokeRegisteredWakeUpCallbackWithChannelCode:self.wakeUpData.channelCode data:self.wakeUpData.data];
-  }
+    // 当前没有注册过回调时，可以快速调用。APICloud由于唤醒机制的特殊性，在每次唤醒时都会注册一次回调，这里需要判断一下，以免回调2次
+    BOOL couldQuickInvoke = (self.registeredWakeUpCallback == nil);
+    // 设定类型和回调
+    self.wakeUpListenerType = XinstallRNSDKWakeUpListenerTypeWithoutDetail;
+    self.registeredWakeUpCallback = callback;
+    
+    if (couldQuickInvoke) {
+        if (self.wakeUpData) {
+            [self invokeRegisteredWakeUpCallbackWithChannelCode:self.wakeUpData.channelCode data:self.wakeUpData.data error:nil];
+        }
+    }
+
+    // 触发一下 scheme 启动参数
+    if (self.isLaunchSchemeUsed == NO) {
+        NSURL *url = self.bridge.launchOptions[UIApplicationLaunchOptionsURLKey];
+        if (url) {
+            self.launchSchemeUsed = YES;
+            [XinstallSDK handleSchemeURL:url];
+        }
+    }
+}
+
+RCT_EXPORT_METHOD(addWakeUpDetailEventListener:(RCTResponseSenderBlock)callback)
+{
+    // 当前没有注册过回调时，可以快速调用。APICloud由于唤醒机制的特殊性，在每次唤醒时都会注册一次回调，这里需要判断一下，以免回调2次
+    BOOL couldQuickInvoke = (self.registeredWakeUpCallback == nil);
+    // 设定类型和回调
+    self.wakeUpListenerType = XinstallRNSDKWakeUpListenerTypeWithDetail;
+    self.registeredWakeUpCallback = callback;
+
+    if (couldQuickInvoke) {
+        if (self.wakeUpData || self.wakeUpError) {
+            [self invokeRegisteredWakeUpCallbackWithChannelCode:self.wakeUpData.channelCode data:self.wakeUpData.data error:self.wakeUpError];
+        }
+    }
+
     // 触发一下 scheme 启动参数
     if (self.isLaunchSchemeUsed == NO) {
         NSURL *url = self.bridge.launchOptions[UIApplicationLaunchOptionsURLKey];
@@ -223,6 +303,11 @@ RCT_EXPORT_METHOD(reportRegister)
 RCT_EXPORT_METHOD(reportEventPoint:(NSString *)eventID pointValue:(NSInteger)eventValue)
 {
     [[XinstallSDK defaultManager] reportEventPoint:eventID eventValue:eventValue];
+}
+
+RCT_EXPORT_METHOD(reportShareByXinShareId:(NSString *)xinShareId)
+{
+    [[XinstallSDK defaultManager] reportShareByXinShareId:xinShareId];
 }
 
 @end

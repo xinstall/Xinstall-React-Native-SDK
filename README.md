@@ -199,6 +199,14 @@ Android系统，iOS系统
 import xinstall from 'xinstall-react-native'
 ```
 
+
+
+#### 3.1、携带参数唤起
+
+> 您可以在下述两种回调方法中任选一个进行实现，不同的回调方法有不同的逻辑，请选择最符合您实际场景的方法进行实现，请勿同时实现两个方法。
+
+**【方法一】：`addWakeUpEventListener()` 该方法只会在成功获取到拉起参数时，才会回调。如果无法成功获取到拉起参数，例如不是集成了 Xinstall Web SDK 的页面拉起您的 App 时，将会无法获取到拉起参数，也就不会执行该回调方法。**
+
 #### addWakeUpEventListener
 
 添加唤醒应用事件监听者。添加 `addWakeUpEventListener` 监听,当从其他应用一键唤起（拉起）本App时候，监听回调函数里可保存唤醒数据供后续业务使用。
@@ -280,6 +288,129 @@ Android系统，iOS系统
 可提供的 1.0.0 及更高版本
 
 
+
+**【方法二】：`addWakeUpDetailEventListener()` 该方法无论是否成功获取到拉起参数，均会回调。如果成功获取到拉起参数，则 wakeUpData != {} 并且 error == {}；如果没有获取到拉起参数，则 wakeUpData == {} 并且 error != {}。**
+
+#### addWakeUpDetailEventListener
+
+添加唤醒应用事件监听者。添加 `addWakeUpDetailEventListener` 监听,当从其他应用一键唤起（拉起）本App时候，监听回调函数里可保存唤醒数据供后续业务使用。
+
+**示例代码**
+
+`addWakeUpDetailEventListener(callback)`
+
+**入参说明**：callback 为唤醒回调数据
+
+**回调说明**：传入监听回调 callback(result)
+
+result：
+
+类型：JSON对象
+
+内部字段：
+
+```json
+// 当获取到唤醒参数时，result 为 json 对象，内部字段为：
+{
+  "wakeUpData" : {
+    "channelCode":"渠道编号",  // 字符串类型。渠道编号，没有渠道编号时为 ""
+    "data":{									// 对象类型。唤起时携带的参数。
+        "co":{								// co 为唤醒页面中通过 Xinstall Web SDK 中的点击按钮传递的数据，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1", 
+            "自定义key2":"自定义value2"
+        },
+        "uo":{   							// uo 为唤醒页面 URL 中 ? 后面携带的标准 GET 参数，key & value 均可自定义，key & value 数量不限制
+            "自定义key1":"自定义value1",
+            "自定义key2":"自定义value2"
+        }
+    }
+	},
+  "error" : {}
+}
+
+// 当没有获取到唤醒参数时，result 为 json 对象，内部字段为：
+{
+  "wakeUpData" : {},
+  "error" : {
+    "errorType" : 7,					// 数字类型。代表错误的类型，具体数字对应类型可在下方查看
+    "errorMsg" : "xxxxx"			// 字符串类型。错误的描述
+  }
+}
+
+/** errorType 对照表：
+ * iOS
+ * -1 : SDK 配置错误；
+ * 0 : 未知错误；
+ * 1 : 网络错误；
+ * 2 : 没有获取到数据；
+ * 3 : 该 App 已被 Xinstall 后台封禁；
+ * 4 : 该操作不被允许（一般代表调用的方法没有开通权限）；
+ * 5 : 入参不正确；
+ * 6 : SDK 初始化未成功完成；
+ * 7 : 没有通过 Xinstall Web SDK 集成的页面拉起；
+ *
+ * Android
+ * 1006 : 未执行init 方法;
+ * 1007 : 未传入Activity，Activity 未比传参数
+ * 1008 : 用户未知操作 不处理
+ * 1009 : 不是唤醒执行的调用方法
+ * 1010 : 前后两次调起时间小于1s，请求过于频繁
+ * 1011 : 获取调起参数失败
+ * 1012 : 重复获取调起参数
+ * 1013 : 本次调起并非为XInstall的调起
+ * 1004 : 无权限
+ * 1014 : SCHEME URL 为空
+ */
+```
+
+**调用示例**
+
+请在 `componentDidMount` 方法中添加监听：
+
+```javascript
+componentDidMount() {
+  // 该方法用于监听 App 通过 Univeral link 或 scheme 拉起后获取唤醒参数
+  xinstall.addWakeUpDetailEventListener(result => {
+    // 回调函数将在合适的时机被调用，这里编写拿到渠道编号以及唤醒数据后的业务逻辑代码
+    let wakeUpData = result.wakeUpData;
+    let error = result.error;
+
+    if (JSON.stringify(wakeUpData) == '{}') {
+      // 没有获取到唤醒参数，可以根据 error.errorType 和 error.errorMsg 做进一步业务处理
+    } else {
+      var channelCode = wakeUpData.channelCode;
+      var data = wakeUpData.data;
+      var co = wakeUpData.co;
+      var uo = wakeUpData.uo;
+      // 根据获取到的数据做对应业务逻辑
+    }
+  });
+}
+```
+
+在 `componentWillUnmount` 方法中移除监听：
+
+```javascript
+componentWillUnmount() {
+  xinstall.removeWakeUpEventListener()
+}
+```
+
+**补充说明**
+
+此方法用于获取动态唤醒参数，通过动态参数，在拉起APP时，获取由 web 网页中传递过来的，如邀请码、游戏房间号等自定义参数，通过注册监听后，获取 web 端传过来的自定义参数。请严格遵循示例中的调用顺序，否则可能导致获取不到唤醒参数。
+
+**可用性**
+
+Android系统，iOS系统
+
+可提供的 1.5.2 及更高版本
+
+
+
+
+
+#### 3.2、携带参数安装
 
 
 #### addInstallEventListener
@@ -432,13 +563,39 @@ Android系统，iOS系统
 
 
 
-### 5、广告平台渠道功能
+### 5、场景定制统计
+
+场景业务介绍，可到[分享数据统计](https://doc.xinstall.com/environment/分享数据统计.html)页面查看
+
+> 分享统计主要用来统计分享业务相关的数据，例如分享次数、分享查看人数、分享新增用户等。在用户分享操作触发后（注：此处为分享事件触发，非分享完成或成功），可调用如下方法上报一次分享数据：
+
+```javascript
+xinstall.reportShareByXinShareId('填写分享人或UID');
+```
+
+**补充说明**
+
+分享人或UID 可由您自行定义，只需要用以区分用户即可。
+
+您可在 Xinstall 管理后台 对应 App 中查看详细分享数据报表，表中的「分享人/UID」即为调用方法时携带的参数，其余字段含义可将鼠标移到字段右边的小问号上进行查看：
+
+![分享报表](https://doc.xinstall.com/integrationGuide/share.jpg)
+
+**可用性**
+
+Android系统，iOS系统
+
+可提供的 1.5.2 及更高版本
+
+
+
+### 6、广告平台渠道功能
 
 >  如果您在 Xinstall 管理后台对应 App 中，**只使用「自建渠道」，而不使用「广告平台渠道」，则无需进行本小节中额外的集成工作**，也能正常使用 Xinstall 提供的其他功能。
 >
 >  注意：根据目前已有的各大主流广告平台的统计方式，目前 iOS 端和 Android 端均需要用户授权并获取一些设备关键值后才能正常进行 [ 广告平台渠道 ] 的统计，如 IDFA / OAID / GAID 等，对该行为敏感的 App 请慎重使用该功能。
 
-#### 5.1、配置工作
+#### 6.1、配置工作
 
 **iOS 端：**
 
@@ -463,7 +620,7 @@ Android系统，iOS系统
 
 
 
-#### 5.2、更换初始化方法
+#### 6.2、更换初始化方法
 
 **使用新的 initWithAd 方法，替代原先的 init 方法来进行模块的初始化**
 
@@ -569,11 +726,11 @@ Android系统，iOS系统
 
 
 
-#### 5.3、上架须知
+#### 6.3、上架须知
 
 **在使用了广告平台渠道后，若您的 App 需要上架，请认真阅读本段内容。**
 
-##### 5.3.1 iOS 端：上架 App Store
+##### 6.3.1 iOS 端：上架 App Store
 
 1. 如果您的 App 没有接入苹果广告（即在 App 中显示苹果投放的广告），那么在提交审核时，在广告标识符中，请按照下图勾选：
 

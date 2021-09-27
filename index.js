@@ -4,7 +4,8 @@ import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 const xinstallModule = NativeModules.Xinstall;
 const xinstallModuleEmitter = new NativeEventEmitter(xinstallModule);
 
-const wakeUpEventName = 'xinstallWakeUpEventName'
+const wakeUpEventName = 'xinstallWakeUpEventName';
+const wakeUpDetailEventName = 'xinstallWakeUpDetailEventName';
 
 var wakeSubscription = null;
 
@@ -50,6 +51,16 @@ export default class Xinstall {
     )
   }
 
+  static addWakeUpDetailEventListener(completion) {
+    wakeSubscription = xinstallModuleEmitter.addListener (wakeUpDetailEventName, data => {
+      completion(data)
+    });
+
+    xinstallModule.addWakeUpDetailEventListener(data => {
+        completion(data)
+    });
+  }
+
   static removeWakeUpEventListener () {
     wakeSubscription.remove()
   }
@@ -60,5 +71,9 @@ export default class Xinstall {
 
   static reportEventPoint (eventID, eventValue) {
     xinstallModule.reportEventPoint(eventID, eventValue)
+  }
+
+  static reportShareByXinShareId(xinShareId) {
+	  xinstallModule.reportShareByXinShareId(xinShareId);
   }
 }

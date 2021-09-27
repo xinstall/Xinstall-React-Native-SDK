@@ -24,7 +24,12 @@ import com.xinstall.XInstall;
 import com.xinstall.listener.XInstallAdapter;
 import com.xinstall.listener.XWakeUpAdapter;
 import com.xinstall.model.XAppData;
+import com.xinstall.model.XAppError;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -34,6 +39,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
     private boolean mInitialized = false;
     private boolean hasCallInit = false;
 
+    public static Integer wakeupType = 0;
     private ReactContext context;
 
     private Callback wakeupCallback = null;
@@ -145,25 +151,44 @@ public class Xinstall extends ReactContextBaseJavaModule {
     private void xinitialized() {
         mInitialized = true;
         if (wakeupIntent != null && wakeupActivity != null&&wakeupCallback != null) {
-            XInstall.getWakeUpParam(wakeupActivity,wakeupIntent, new XWakeUpAdapter() {
-                @Override
-                public void onWakeUp(XAppData xAppData) {
-                    if (xAppData != null) {
-                        WritableMap params = xData2Map(xAppData, false);
+            if (wakeupType == 1) {
+                XInstall.getWakeUpParam(wakeupActivity,wakeupIntent, new XWakeUpAdapter() {
+                    @Override
+                    public void onWakeUp(XAppData xAppData) {
+                        if (xAppData != null) {
+                            WritableMap params = xData2Map(xAppData, false);
+                            if (wakeupCallback == null) {
+                                getReactApplicationContext()
+                                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                        .emit("xinstallWakeUpEventName", params);
+                            } else {
+                                wakeupCallback.invoke(params);
+                            }
+                        }
+                        wakeupCallback = null;
+                        wakeupActivity = null;
+                        wakeupIntent = null;
+                    }
+                });
+            } else if (wakeupType == 2) {
+                XInstall.getWakeUpParamEvenErrorAlsoCallBack(wakeupActivity, wakeupIntent, new XWakeUpAdapter() {
+                    @Override
+                    public void onWakeUpFinish(XAppData xAppData, XAppError xAppError) {
+                        super.onWakeUpFinish(xAppData, xAppError);
+                        WritableMap params = xDataHasErrorMap(xAppData,xAppError);
                         if (wakeupCallback == null) {
                             getReactApplicationContext()
                                     .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                                    .emit("xinstallWakeUpEventName", params);
+                                    .emit("xinstallWakeUpDetailEventName", params);
                         } else {
                             wakeupCallback.invoke(params);
                         }
+                        wakeupCallback = null;
+                        wakeupActivity = null;
+                        wakeupIntent = null;
                     }
-                    wakeupCallback = null;
-                    wakeupActivity = null;
-                    wakeupIntent = null;
-                }
-            });
-
+                });
+            }
         } else {
             wakeupActivity = null;
             wakeupIntent = null;
@@ -172,15 +197,57 @@ public class Xinstall extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void addWakeUpEventListener(final Callback successBack) {
-        Log.d(TAG, "getWakeUp");
+    public void addWakeUpDetailEventListener(final Callback successBack) {
+        Log.d(TAG, "getWakeUpDetail");
         runInUIThread(new Runnable() {
             @Override
             public void run() {
+                if (wakeupType == 1) {
+                    Log.d(TAG, "addWakeUpEventListener 与 addWakeUpDetailEventListener 为互斥方法，择一选择使用");
+                }
+                wakeupType = 2;
+
+                addWakeUpDetailEventListenerInMain(successBack);
+            }
+        });
+    }
+
+    @ReactMethod
+    public void addWakeUpEventListener(final Callback successBack) {
+        Log.d(TAG, "getWakeUp");
+
+
+        runInUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (wakeupType == 2) {
+                    Log.d(TAG, "addWakeUpEventListener 与 addWakeUpDetailEventListener 为互斥方法，择一选择使用");
+                }
+                wakeupType = 1;
+
                 addWakeUpEventListenerInMain(successBack);
             }
         });
+    }
 
+    private void  addWakeUpDetailEventListenerInMain(final Callback successBack) {
+        if (!hasCallInit) {
+            Log.d(TAG, "未执行SDK 初始化方法, SDK 需要手动初始化(初始方法为 init 和 initWithAd !");
+            return;
+        }
+        if (mInitialized) {
+            Activity currentActivity = getCurrentActivity();
+            if (currentActivity != null) {
+                Intent intent = currentActivity.getIntent();
+                getWakeUp(currentActivity,intent, successBack);
+            }
+        } else {
+            wakeupCallback = successBack;
+            wakeupActivity = getCurrentActivity();
+            if (wakeupActivity != null) {
+                wakeupIntent = wakeupActivity.getIntent();
+            }
+        }
     }
 
     private void addWakeUpEventListenerInMain(final Callback successBack) {
@@ -204,21 +271,41 @@ public class Xinstall extends ReactContextBaseJavaModule {
     }
 
     private void getWakeUp(Activity activity, Intent intent, final Callback callback) {
-        XInstall.getWakeUpParam(activity,intent, new XWakeUpAdapter() {
-            @Override
-            public void onWakeUp(XAppData xAppData) {
-                if (xAppData != null) {
-                    WritableMap params = xData2Map(xAppData, false);
+        if (wakeupType == 1) {
+            XInstall.getWakeUpParam(activity,intent, new XWakeUpAdapter() {
+                @Override
+                public void onWakeUp(XAppData xAppData) {
+                    if (xAppData != null) {
+                        WritableMap params = xData2Map(xAppData, false);
+                        if (callback == null) {
+                            getReactApplicationContext()
+                                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                    .emit("xinstallWakeUpEventName", params);
+                        } else {
+                            callback.invoke(params);
+                        }
+                    }
+                }
+            });
+        } else if (wakeupType == 2) {
+            XInstall.getWakeUpParamEvenErrorAlsoCallBack(activity, intent, new XWakeUpAdapter() {
+                @Override
+                public void onWakeUpFinish(XAppData xAppData, XAppError xAppError) {
+                    super.onWakeUpFinish(xAppData, xAppError);
+
+                    WritableMap params = xDataHasErrorMap(xAppData,xAppError);
+
                     if (callback == null) {
                         getReactApplicationContext()
                                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                                .emit("xinstallWakeUpEventName", params);
+                                .emit("xinstallWakeUpDetailEventName", params);
                     } else {
                         callback.invoke(params);
                     }
                 }
-            }
-        });
+            });
+        }
+
     }
 
     @ReactMethod
@@ -248,15 +335,25 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void reportRegister() {
-        Log.d("XinstallModule", "reportRegister");
+        Log.d(TAG, "reportRegister");
         XInstall.reportRegister();
     }
 
     @ReactMethod
     public void reportEventPoint(String pointId, Integer pointValue) {
-        Log.d("XinstallModule", "reportEventPoint");
+        Log.d(TAG, "reportEventPoint");
         if (!TextUtils.isEmpty(pointId)) {
-            XInstall.reportPoint(pointId, pointValue);
+            XInstall.reportEvent(pointId, pointValue);
+        }
+    }
+
+    @ReactMethod
+    public void reportShareByXinShareId(String userId) {
+        Log.d(TAG,"reportShareByXinShareId");
+        if (TextUtils.isEmpty(userId)) {
+            Log.d(TAG,"reportShareByXinShareId 方法中，userId 为必传参数");
+        } else {
+            XInstall.reportShareByXinShareId(userId);
         }
     }
 
@@ -265,8 +362,14 @@ public class Xinstall extends ReactContextBaseJavaModule {
         return "Xinstall";
     }
 
+
+
+
     private WritableMap xData2Map(XAppData xAppData, boolean isInit) {
-        Log.d("XinstallModule", "getInstallParam : data = " + xAppData.toJsonObject().toString());
+        if (xAppData == null) {
+            return  Arguments.createMap();
+        }
+        Log.d("XinstallModule", "getInstallParam : data = " + (xAppData != null?xAppData.toJsonObject().toString():""));
 
         String channelCode = xAppData.getChannelCode();
         String timeSpan = xAppData.getTimeSpan();
@@ -321,5 +424,18 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
         params.putMap("data", data);
         return params;
+    }
+
+    private  WritableMap xDataHasErrorMap(XAppData data, XAppError xAppError) {
+        WritableMap wakeUpData = xData2Map(data, false);
+        WritableMap error = Arguments.createMap();
+        if (xAppError != null) {
+            error.putString("errorType",xAppError.getErrorCode());
+            error.putString("errorMsg",xAppError.getErrorMsg());
+        }
+        WritableMap result = Arguments.createMap();
+        result.putMap("wakeUpData",wakeUpData);
+        result.putMap("error",error);
+        return  result;
     }
 }
