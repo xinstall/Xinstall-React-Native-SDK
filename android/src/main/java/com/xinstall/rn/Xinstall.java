@@ -8,10 +8,10 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
-import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -26,10 +26,6 @@ import com.xinstall.listener.XWakeUpAdapter;
 import com.xinstall.model.XAppData;
 import com.xinstall.model.XAppError;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -45,6 +41,8 @@ public class Xinstall extends ReactContextBaseJavaModule {
     private Callback wakeupCallback = null;
     private Intent wakeupIntent = null;
     private Activity wakeupActivity = null;
+
+
 
     private static final Handler UIHandler = new Handler(Looper.getMainLooper());
 
@@ -69,8 +67,18 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
             @Override
             public void onNewIntent(Intent intent) {
-                Activity activity = getCurrentActivity();
-                getWakeUp(activity,intent, null);
+                if (mInitialized) {
+                    Activity currentActivity = getCurrentActivity();
+                    if (currentActivity != null) {
+                        getWakeUp(currentActivity,intent, null);
+                    }
+                } else {
+                    wakeupActivity = getCurrentActivity();
+                    if (wakeupActivity != null) {
+                        wakeupIntent = intent;
+                    }
+                    wakeupCallback = null;
+                }
             }
         });
 
@@ -105,7 +113,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void initWithAd(ReadableMap params, final Callback premissionBackBlock) {
-
+        hasCallInit = true;
         XINConfiguration configuration = XINConfiguration.Builder();
         boolean adEnable = true;
         if (params.hasKey("adEnable")) {
@@ -150,7 +158,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
 
     private void xinitialized() {
         mInitialized = true;
-        if (wakeupIntent != null && wakeupActivity != null&&wakeupCallback != null) {
+        if (wakeupIntent != null && wakeupActivity != null) {
             if (wakeupType == 1) {
                 XInstall.getWakeUpParam(wakeupActivity,wakeupIntent, new XWakeUpAdapter() {
                     @Override
@@ -305,7 +313,6 @@ public class Xinstall extends ReactContextBaseJavaModule {
                 }
             });
         }
-
     }
 
     @ReactMethod
@@ -391,7 +398,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
         } else {
             try {
                 WritableMap uoMap = Arguments.createMap();
-                com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(uo);
+                JSONObject jsonObject = JSON.parseObject(uo);
                 Iterator<Map.Entry<String, Object>> iterator = jsonObject.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<String, Object> next = iterator.next();
@@ -410,7 +417,7 @@ public class Xinstall extends ReactContextBaseJavaModule {
         } else {
             try {
                 WritableMap coMap = Arguments.createMap();
-                com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(co);
+                JSONObject jsonObject = JSON.parseObject(co);
                 Iterator<Map.Entry<String, Object>> iterator = jsonObject.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<String, Object> next = iterator.next();

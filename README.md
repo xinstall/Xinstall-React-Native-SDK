@@ -565,6 +565,8 @@ Android系统，iOS系统
 
 ### 5、场景定制统计
 
+#### 5.1 分享统计
+
 场景业务介绍，可到[分享数据统计](https://doc.xinstall.com/environment/分享数据统计.html)页面查看
 
 > 分享统计主要用来统计分享业务相关的数据，例如分享次数、分享查看人数、分享新增用户等。在用户分享操作触发后（注：此处为分享事件触发，非分享完成或成功），可调用如下方法上报一次分享数据：
@@ -641,8 +643,13 @@ Android系统，iOS系统
          </tr>
          <tr>
              <th>idfa</th>
-             <th>字符串</th>
+             <th>string</th>
              <th>iOS 系统中的广告标识符</th>
+         </tr>
+         <tr>
+             <th>asa</th>
+             <th>boolean</th>
+             <th>是否开启 ASA 渠道，不需要时可以不传。详见《7、苹果搜索广告（ASA）渠道功能》</th>
          </tr>
      </table>
 
@@ -767,6 +774,69 @@ Android系统，iOS系统
 ![AppStore_IDFA_6](https://cdn.xinstall.com/iOS_SDK%E7%B4%A0%E6%9D%90/IDFA_6.png)
 
 
+
+### 7、苹果搜索广告（ASA）渠道功能
+
+>  如果您在 Xinstall 管理后台对应 App 中，**不使用「ASA渠道」，则无需进行本小节中额外的集成工作**，也能正常使用 Xinstall 提供的其他功能。
+
+#### 7.1、更换初始化方法
+
+**使用新的 initWithAd 方法，替代原先的 init 方法来进行模块的初始化**
+
+#### initWithAd
+
+**示例代码**
+
+`initWithAd(params)` 
+
+**入参说明**：需要主动传入参数，JSON对象
+
+入参内部字段：
+
+* iOS 端：
+
+  <table>
+         <tr>
+             <th>参数名</th>
+             <th>参数类型</th>
+             <th>描述 </th>
+         </tr>
+         <tr>
+             <th>idfa</th>
+             <th>string</th>
+             <th>iOS 系统中的广告标识符（不需要时可以不传）</th>
+         </tr>
+         <tr>
+             <th>asa</th>
+             <th>boolean</th>
+             <th>是否开启 ASA 渠道，true 时为开启，false 或者不传时均为不开启</th>
+         </tr>
+     </table>
+
+**回调说明**：无需传入回调函数
+
+**调用示例**
+
+```javascript
+import {Platform} from 'react-native';
+import xinstall from 'xinstall-react-native';
+
+// 由于 iOS 和 Android 两端需要传入的参数不同，故需要根据平台进行判断，传入不同的参数
+if (Platform.OS === 'ios') {
+  // 只使用 asa 渠道，不使用广告渠道时，只需要传入 asa 参数
+  xinstall.initWithAd({"asa" : true});
+  // 如果需要同时使用广告渠道，那么需要同时传入 idfa 参数，根据《6、广告平台渠道功能》中的方法获取到 idfa 后，再调用初始化方法：
+  // xinstall.initWithAd({"idfa" : idfa, "asa" : true});
+} else if (uni.getSystemInfoSync().platform == 'android') {
+  xinstall.init();
+}
+```
+
+**可用性**
+
+iOS系统
+
+可提供的 1.5.5 及更高版本
 
 
 

@@ -8,6 +8,7 @@
 
 #import "XinstallRNSDK.h"
 #import "XinstallRNConfig.h"
+#import <AdServices/AAAttribution.h>
 
 #if __has_include(<React/RCTBridge.h>)
   #import <React/RCTEventDispatcher.h>
@@ -201,7 +202,7 @@ RCT_EXPORT_MODULE(Xinstall);
 
 - (NSArray<NSString *> *)supportedEvents
 {
-  return @[kXinstallWakeUpEventName];
+  return @[kXinstallWakeUpEventName, kXinstallWakeUpDetailEventName];
 }
 
 RCT_EXPORT_METHOD(setLog:(BOOL)isOpen)
@@ -214,9 +215,23 @@ RCT_EXPORT_METHOD(initWithoutAd)
     [XinstallSDK initWithDelegate:self];
 }
 
-RCT_EXPORT_METHOD(initWithAd:(NSString *)idfa)
+RCT_EXPORT_METHOD(initWithAd:(id)adConfig)
 {
-    [XinstallSDK initWithDelegate:self idfa:idfa];
+    NSString *idfa;
+    NSString *asaToken;
+    if ([adConfig isKindOfClass:[NSString class]]) {
+        idfa = adConfig;
+    } else if ([adConfig isKindOfClass:[NSDictionary class]]) {
+        idfa = adConfig[@"idfa"];
+        if ([adConfig[@"asa"] boolValue]) {
+            if (@available(iOS 14.3, *)) {
+                NSError *error;
+                asaToken = [AAAttribution attributionTokenWithError:&error];
+            }
+        }
+    }
+    
+    [XinstallSDK initWithDelegate:self idfa:idfa asaToken:asaToken];
 }
 
 RCT_EXPORT_METHOD(addInstallEventListener:(RCTResponseSenderBlock)callback)

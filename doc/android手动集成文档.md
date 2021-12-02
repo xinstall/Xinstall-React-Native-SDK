@@ -22,6 +22,20 @@ dependencies {
 }
 ```
 
+在``package.json`` 文件中的dependencs中添加依赖，具体如下
+```json
+"dependencies": {
+    ......// others
+    "xinstall-react-native": "1.5.4"
+  },
+  
+```
+
+然后执行 
+```shell
+npx react-native link xinstall-react-native
+```
+
 ## Xinstall配置
 
 ### 设置AppKey 
