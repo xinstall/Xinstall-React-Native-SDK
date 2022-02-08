@@ -70,6 +70,11 @@ RCT_EXPORT_MODULE(Xinstall);
   return self;
 }
 
+// TODO 本期先不加，下期添加
+//+ (BOOL)requiresMainQueueSetup {
+//    return YES;
+//}
+
 
 #pragma mark - XinstallDelegate Methods
 
@@ -318,6 +323,11 @@ RCT_EXPORT_METHOD(reportRegister)
 RCT_EXPORT_METHOD(reportEventPoint:(NSString *)eventID pointValue:(NSInteger)eventValue)
 {
     [[XinstallSDK defaultManager] reportEventPoint:eventID eventValue:eventValue];
+}
+
+RCT_EXPORT_METHOD(reportEventWhenOpenDetailInfo:(NSString *)eventId eventValue:(NSInteger)eventValue eventSubValue:(NSString *)eventSubValue)
+{
+    [[XinstallSDK defaultManager] reportEventWhenOpenDetailInfoWithEventPoint:eventId eventValue:eventValue  subValue:eventSubValue];
 }
 
 RCT_EXPORT_METHOD(reportShareByXinShareId:(NSString *)xinShareId)

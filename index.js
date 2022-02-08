@@ -6,7 +6,7 @@ const xinstallModuleEmitter = new NativeEventEmitter(xinstallModule);
 
 const wakeUpEventName = 'xinstallWakeUpEventName';
 const wakeUpDetailEventName = 'xinstallWakeUpDetailEventName';
-
+ 
 var wakeSubscription = null;
 
 export default class Xinstall {
@@ -73,7 +73,11 @@ export default class Xinstall {
     xinstallModule.reportEventPoint(eventID, eventValue)
   }
 
-  static reportShareByXinShareId(xinShareId) {
-	  xinstallModule.reportShareByXinShareId(xinShareId);
+  static reportEventWhenOpenDetailInfo(eventId, eventValue, eventSubValue) {
+    xinstallModule.reportEventWhenOpenDetailInfo(eventId, eventValue, eventSubValue)
+  }
+  
+  static reportShareByXinShareId(userId) {
+	xinstallModule.reportShareByXinShareId(userId);
   }
 }
