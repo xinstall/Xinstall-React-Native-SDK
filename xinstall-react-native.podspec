@@ -5,7 +5,7 @@ pjson = JSON.parse(File.read('package.json'))
 Pod::Spec.new do |s|
 
   s.name            = "xinstall-react-native"
-  s.version         = "1.7.4"
+  s.version         = "1.7.6"
   s.homepage        = "https://github.com/xinstall/Xinstall-React-Native-SDK"
   s.summary         = "xinstall"
   s.author          = "xinstall"

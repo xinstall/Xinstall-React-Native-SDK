@@ -9,7 +9,7 @@
 #import "XinstallRNConfig.h"
 
 NSString *const XinstallThirdPlatformFlag = @"XINSTALL_THIRDPLATFORM_REACTNATIVE_THIRDPLATFORM_XINSTALL";
-NSString *const XinstallThirdVersionFlag = @"XINSTALL_THIRDSDKVERSION_1.7.4_THIRDSDKVERSION_XINSTALL";
+NSString *const XinstallThirdVersionFlag = @"XINSTALL_THIRDSDKVERSION_1.7.6_THIRDSDKVERSION_XINSTALL";
 
 NSInteger const XinstallThirdPlatform = 9;
-NSString *const XinstallThirdVersion = @"1.7.4";
+NSString *const XinstallThirdVersion = @"1.7.6";
